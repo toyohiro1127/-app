@@ -37,7 +37,6 @@
   .header-btn { background: var(--surface2); border: none; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; }
   .header-btn.active { background: var(--accent); color: white; }
 
-  /* 接続状態インジケータ */
   .status-bar { padding: 6px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
   .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
   .status-dot.online { background: var(--green); }
@@ -53,6 +52,8 @@
   .worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .worker-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 4px; font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: background 0.1s, transform 0.1s; }
   .worker-btn:active { background: var(--accent-bg); transform: scale(0.97); }
+  .worker-btn.red { color: var(--red); }
+  .worker-btn.green-w { color: var(--green); }
 
   .worker-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
   .worker-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
@@ -71,7 +72,7 @@
   .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 10px; cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: transform 0.1s; }
   .task-card:active { transform: scale(0.97); }
   .task-card.running { border: 2px solid var(--green); background: var(--green-bg); }
-  .task-icon { font-size: 24px; margin-bottom: 6px; }
+  .task-icon { font-size: 24px; margin-bottom: 6px; line-height: 1.2; }
   .task-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .task-card.running .task-name { color: var(--green); }
 
@@ -83,6 +84,9 @@
   .log-range { font-size: 11px; color: var(--text3); margin-top: 1px; }
   .log-dur { font-size: 13px; font-weight: 600; color: var(--text2); }
   .log-empty { padding: 20px 14px; font-size: 13px; color: var(--text3); text-align: center; }
+  .log-actions { display: flex; gap: 6px; align-items: center; margin-left: 8px; }
+  .log-edit-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--text2); cursor: pointer; }
+  .log-del-btn { background: var(--red-bg); border: 1px solid #fecaca; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--red); cursor: pointer; }
 
   /* 集計画面 */
   .summary-header { padding: 16px 16px 0; }
@@ -118,6 +122,23 @@
   .date-filter { display: flex; align-items: center; gap: 8px; margin: 0 16px 12px; }
   .date-filter input[type=date] { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); }
   .date-filter label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+
+  /* 編集モーダル */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; display: none; align-items: flex-end; }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 20px 16px 40px; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+  .modal-input { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; background: var(--surface2); color: var(--text); }
+  .modal-select { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 15px; background: var(--surface2); color: var(--text); }
+  .modal-btns { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-btn { flex: 1; padding: 13px; border-radius: var(--radius); border: none; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .modal-btn.cancel { background: var(--surface2); color: var(--text2); }
+  .modal-btn.save { background: var(--accent); color: white; }
+
+  /* SVGアイコン */
+  .task-icon svg { width: 32px; height: 32px; display: block; margin: 0 auto 2px; }
 </style>
 </head>
 <body>
@@ -127,6 +148,31 @@
   <div class="loading-text">Firebase に接続中...</div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- 編集モーダル -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal-sheet">
+    <div class="modal-title">記録を編集</div>
+    <div class="modal-field">
+      <div class="modal-label">作業項目</div>
+      <select class="modal-select" id="edit-task"></select>
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">開始時刻</div>
+      <input class="modal-input" type="time" id="edit-start">
+    </div>
+    <div class="modal-field">
+      <div class="modal-label">終了時刻</div>
+      <input class="modal-input" type="time" id="edit-end">
+    </div>
+    <input type="hidden" id="edit-key">
+    <input type="hidden" id="edit-date">
+    <div class="modal-btns">
+      <button class="modal-btn cancel" onclick="closeEditModal()">キャンセル</button>
+      <button class="modal-btn save" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
 
 <div class="header">
   <div>
@@ -225,16 +271,112 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ===== 作業者・タスク定義 =====
-const WORKERS = ['浅井','坂本（隆）L','榎本SL','田村','坂本（泰）','高橋','宮地','伊井','片山','山崎','浜辺','山尾','中原SL','谷口','上野','藤原','落合','小柴SL','福田','山下','林原','野田','齋尾','村田','大西','前嶋','谷口','山本','下田'];
+// color: 'red' = 赤, 'green' = 緑, なし = 通常
+const WORKERS = [
+  { name:'浅井' },
+  { name:'坂本（隆）L' },
+  { name:'榎本SL' },
+  { name:'田村' },
+  { name:'坂本（泰）' },
+  { name:'高橋' },
+  { name:'宮地' },
+  { name:'伊井' },
+  { name:'片山' },
+  { name:'山崎' },
+  { name:'浜辺' },
+  { name:'山尾' },
+  { name:'中原SL' },
+  { name:'谷口' },
+  { name:'上野' },
+  { name:'藤原', color:'green' },
+  { name:'落合', color:'green' },
+  { name:'小柴SL' },
+  { name:'福田' },
+  { name:'山下', color:'red' },
+  { name:'林原', color:'red' },
+  { name:'野田' },
+  { name:'齋尾' },
+  { name:'村田', color:'green' },
+  { name:'大西', color:'green' },
+  { name:'前嶋', color:'green' },
+  { name:'谷口', color:'green' },
+  { name:'山本' },
+  { name:'下田' },
+];
+
+// 鉄パレット SVG（押出材料を入れる鉄パレット）
+const PALLET_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- パレット本体（底板） -->
+  <rect x="4" y="36" width="40" height="5" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="1"/>
+  <!-- 足1 -->
+  <rect x="6" y="38" width="8" height="6" rx="1" fill="#546E7A"/>
+  <!-- 足2 -->
+  <rect x="20" y="38" width="8" height="6" rx="1" fill="#546E7A"/>
+  <!-- 足3 -->
+  <rect x="34" y="38" width="8" height="6" rx="1" fill="#546E7A"/>
+  <!-- 積まれた材料（角材） -->
+  <rect x="6" y="28" width="36" height="5" rx="1" fill="#90A4AE" stroke="#78909C" stroke-width="0.8"/>
+  <rect x="6" y="22" width="36" height="5" rx="1" fill="#90A4AE" stroke="#78909C" stroke-width="0.8"/>
+  <rect x="6" y="16" width="36" height="5" rx="1" fill="#90A4AE" stroke="#78909C" stroke-width="0.8"/>
+  <!-- 断面ライン -->
+  <line x1="14" y1="16" x2="14" y2="33" stroke="#546E7A" stroke-width="0.7"/>
+  <line x1="22" y1="16" x2="22" y2="33" stroke="#546E7A" stroke-width="0.7"/>
+  <line x1="30" y1="16" x2="30" y2="33" stroke="#546E7A" stroke-width="0.7"/>
+  <line x1="38" y1="16" x2="38" y2="33" stroke="#546E7A" stroke-width="0.7"/>
+  <!-- バンド（締め帯） -->
+  <rect x="18" y="15" width="3" height="21" rx="0.5" fill="#FFA726" opacity="0.8"/>
+  <rect x="27" y="15" width="3" height="21" rx="0.5" fill="#FFA726" opacity="0.8"/>
+</svg>`;
+
+// チップソー SVG
+const CHIPSAW_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
+  <!-- ブレード外円 -->
+  <circle cx="22" cy="24" r="16" fill="#B0BEC5" stroke="#78909C" stroke-width="1.5"/>
+  <!-- 刃（ギザギザ） -->
+  <path d="M22 8 L24 13 L22 11 L20 13 Z" fill="#546E7A"/>
+  <path d="M31.3 10.7 L31.3 16 L29.7 13.8 L27 15.5 Z" fill="#546E7A"/>
+  <path d="M37.3 17 L33 19 L34.2 16.7 L31.3 15.5 Z" fill="#546E7A"/>
+  <path d="M38 24 L33 24 L35 22.3 L33 20.5 Z" fill="#546E7A"/>
+  <path d="M37.3 31 L33 29 L35.5 28 L34.2 25.3 Z" fill="#546E7A"/>
+  <path d="M31.3 37.3 L29.7 32.8 L31.3 34.2 L33 31.3 Z" fill="#546E7A"/>
+  <path d="M22 40 L20 35 L22 37 L24 35 Z" fill="#546E7A"/>
+  <path d="M12.7 37.3 L15 33 L16.3 35.5 L18.3 33 Z" fill="#546E7A"/>
+  <path d="M6.7 31 L11 29 L9.8 31.3 L12.7 32.5 Z" fill="#546E7A"/>
+  <path d="M6 24 L11 22.3 L9 24 L11 25.7 Z" fill="#546E7A"/>
+  <path d="M6.7 17 L11 19 L8.5 20 L9.8 22.7 Z" fill="#546E7A"/>
+  <path d="M12.7 10.7 L14.3 15.2 L12.7 13.8 L11 16.7 Z" fill="#546E7A"/>
+  <!-- 内円（刃のベース） -->
+  <circle cx="22" cy="24" r="11" fill="#CFD8DC" stroke="#90A4AE" stroke-width="1"/>
+  <!-- チップ（超硬チップ） -->
+  <circle cx="22" cy="13" r="2" fill="#FF7043"/>
+  <circle cx="29.5" cy="15.5" r="2" fill="#FF7043"/>
+  <circle cx="33" cy="22" r="2" fill="#FF7043"/>
+  <circle cx="33" cy="26" r="2" fill="#FF7043"/>
+  <circle cx="29.5" cy="32.5" r="2" fill="#FF7043"/>
+  <circle cx="22" cy="35" r="2" fill="#FF7043"/>
+  <circle cx="14.5" cy="32.5" r="2" fill="#FF7043"/>
+  <circle cx="11" cy="26" r="2" fill="#FF7043"/>
+  <circle cx="11" cy="22" r="2" fill="#FF7043"/>
+  <circle cx="14.5" cy="15.5" r="2" fill="#FF7043"/>
+  <!-- 中心穴 -->
+  <circle cx="22" cy="24" r="4" fill="#78909C" stroke="#546E7A" stroke-width="1"/>
+  <circle cx="22" cy="24" r="2" fill="#455A64"/>
+  <!-- アーバー穴スポーク -->
+  <line x1="22" y1="19" x2="22" y2="29" stroke="#546E7A" stroke-width="0.8" opacity="0.5"/>
+  <line x1="17" y1="24" x2="27" y2="24" stroke="#546E7A" stroke-width="0.8" opacity="0.5"/>
+  <!-- ハンドル/本体部分 -->
+  <rect x="35" y="21" width="9" height="6" rx="2" fill="#455A64" stroke="#37474F" stroke-width="1"/>
+  <circle cx="40" cy="24" r="2" fill="#78909C"/>
+</svg>`;
 
 const TASKS_MGMT = [
-  { id:'prep_all',  name:'全体段取り',   icon:'⚙️' },
+  { id:'prep_all',  name:'全体段取り',   svgIcon: PALLET_SVG },
   { id:'prep_ind',  name:'個別段取り',   icon:'🔧' },
   { id:'inspect',   name:'検査・確認',   icon:'🔍' },
   { id:'transport', name:'運搬・移動',   icon:'🚚' },
 ];
 const TASKS_WORK = [
-  { id:'cut',     name:'切断',           icon:'✂️' },
+  { id:'cut',     name:'切断',           svgIcon: CHIPSAW_SVG },
   { id:'machine', name:'マシニング',     icon:'🔩' },
   { id:'press',   name:'プレス',         icon:'⬇️' },
   { id:'drill',   name:'ボール盤',       icon:'🔄' },
@@ -284,6 +426,10 @@ function showToast(msg) {
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
+function getTaskIcon(task) {
+  if(task.svgIcon) return task.svgIcon;
+  return task.icon || '📋';
+}
 
 // ===== Firebase 接続状態監視 =====
 db.ref('.info/connected').on('value', snap => {
@@ -328,9 +474,12 @@ function showScreen(name) {
 
 // ===== 作業者選択 =====
 function initWorkers() {
-  document.getElementById('worker-grid').innerHTML = WORKERS.map(w =>
-    `<button class="worker-btn" onclick="selectWorker('${w}')">${w}</button>`
-  ).join('');
+  document.getElementById('worker-grid').innerHTML = WORKERS.map(w => {
+    let cls = 'worker-btn';
+    if(w.color === 'red') cls += ' red';
+    if(w.color === 'green') cls += ' green-w';
+    return `<button class="${cls}" onclick="selectWorker('${w.name}')">${w.name}</button>`;
+  }).join('');
   const d=new Date();
   document.getElementById('header-date').textContent = d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
   const todayStr = today();
@@ -346,14 +495,19 @@ function selectWorker(name) {
 }
 
 // ===== タスク画面 =====
+function renderTaskCard(t) {
+  const on = runningTask && runningTask.id === t.id;
+  const iconHtml = t.svgIcon
+    ? `<div class="task-icon">${t.svgIcon}</div>`
+    : `<div class="task-icon">${t.icon}</div>`;
+  return `<div class="task-card${on?' running':''}" onclick="startTask('${t.id}')">
+    ${iconHtml}
+    <div class="task-name">${t.name}</div>
+  </div>`;
+}
+
 function renderGroup(tasks, containerId) {
-  document.getElementById(containerId).innerHTML = tasks.map(t => {
-    const on = runningTask && runningTask.id === t.id;
-    return `<div class="task-card${on?' running':''}" onclick="startTask('${t.id}')">
-      <div class="task-icon">${t.icon}</div>
-      <div class="task-name">${t.name}</div>
-    </div>`;
-  }).join('');
+  document.getElementById(containerId).innerHTML = tasks.map(renderTaskCard).join('');
 }
 
 function renderTaskScreen() {
@@ -368,7 +522,8 @@ function startTask(taskId) {
   runningTask = ALL_TASKS.find(t=>t.id===taskId);
   runningStart = Date.now();
   document.getElementById('running-banner').style.display='flex';
-  document.getElementById('running-task-name').textContent = runningTask.icon+' '+runningTask.name+' 計測中';
+  const iconText = runningTask.svgIcon ? '▶' : runningTask.icon;
+  document.getElementById('running-task-name').textContent = iconText + ' ' + runningTask.name + ' 計測中';
   clearInterval(timerInterval);
   timerInterval = setInterval(()=>{
     document.getElementById('running-timer').textContent = fmtTimer(Date.now()-runningStart);
@@ -382,7 +537,7 @@ function stopTask() {
   if(!runningTask) return;
   const end=Date.now(), dur=end-runningStart;
   const logData = {
-    worker, task:runningTask.id, taskName:runningTask.name, taskIcon:runningTask.icon,
+    worker, task:runningTask.id, taskName:runningTask.name, taskIcon:runningTask.icon||'',
     start:runningStart, end, duration:dur, date:fmtDate(runningStart), ts: firebase.database.ServerValue.TIMESTAMP
   };
   saveLog(logData);
@@ -396,13 +551,78 @@ function renderTodayLog() {
   const tl = allLogs.filter(l=>l.worker===worker && l.date===today());
   const el = document.getElementById('today-log');
   if(!tl.length){ el.innerHTML='<div class="log-empty">まだ記録がありません</div>'; return; }
-  el.innerHTML = tl.slice().sort((a,b)=>b.start-a.start).slice(0,8).map(l=>
+  el.innerHTML = tl.slice().sort((a,b)=>b.start-a.start).slice(0,15).map(l=>
     `<div class="log-item">
-      <div><div class="log-name">${l.taskIcon||''} ${l.taskName}</div>
-      <div class="log-range">${fmtTime(l.start)} → ${fmtTime(l.end)}</div></div>
+      <div style="flex:1;min-width:0">
+        <div class="log-name">${l.taskIcon||''} ${l.taskName}</div>
+        <div class="log-range">${fmtTime(l.start)} → ${fmtTime(l.end)}</div>
+      </div>
       <div class="log-dur">${fmtShort(l.duration)}</div>
+      <div class="log-actions">
+        <button class="log-edit-btn" onclick="openEditModal('${l.key}')">編集</button>
+        <button class="log-del-btn" onclick="deleteLog('${l.key}')">削除</button>
+      </div>
     </div>`
   ).join('');
+}
+
+// ===== 編集・削除 =====
+function openEditModal(key) {
+  const log = allLogs.find(l=>l.key===key);
+  if(!log) return;
+
+  // タスク選択肢を生成
+  const sel = document.getElementById('edit-task');
+  sel.innerHTML = ALL_TASKS.map(t=>`<option value="${t.id}"${t.id===log.task?' selected':''}>${t.name}</option>`).join('');
+
+  // 時刻をセット（HH:MM形式）
+  document.getElementById('edit-start').value = fmtTime(log.start);
+  document.getElementById('edit-end').value   = fmtTime(log.end);
+  document.getElementById('edit-key').value   = key;
+  document.getElementById('edit-date').value  = log.date;
+
+  document.getElementById('edit-modal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('edit-modal').classList.remove('open');
+}
+
+function saveEdit() {
+  const key      = document.getElementById('edit-key').value;
+  const dateStr  = document.getElementById('edit-date').value;
+  const taskId   = document.getElementById('edit-task').value;
+  const startStr = document.getElementById('edit-start').value;
+  const endStr   = document.getElementById('edit-end').value;
+
+  const task = ALL_TASKS.find(t=>t.id===taskId);
+  if(!task){ showToast('作業項目が不正です'); return; }
+
+  // 日付 + 時刻 → timestamp
+  const startTs = new Date(dateStr + 'T' + startStr + ':00').getTime();
+  const endTs   = new Date(dateStr + 'T' + endStr   + ':00').getTime();
+  if(isNaN(startTs)||isNaN(endTs)){ showToast('時刻が不正です'); return; }
+  if(endTs <= startTs){ showToast('終了時刻は開始より後にしてください'); return; }
+
+  const updates = {
+    task:     task.id,
+    taskName: task.name,
+    taskIcon: task.icon || '',
+    start:    startTs,
+    end:      endTs,
+    duration: endTs - startTs,
+  };
+
+  db.ref('logs/'+key).update(updates)
+    .then(()=>{ showToast('✓ 記録を更新しました'); closeEditModal(); })
+    .catch(()=>{ showToast('⚠ 更新に失敗しました'); });
+}
+
+function deleteLog(key) {
+  if(!confirm('この記録を削除しますか？')) return;
+  db.ref('logs/'+key).remove()
+    .then(()=>showToast('🗑 記録を削除しました'))
+    .catch(()=>showToast('⚠ 削除に失敗しました'));
 }
 
 // ===== 集計画面 =====
@@ -427,7 +647,7 @@ function renderSummary() {
   let rows = [];
   if(summaryTab===0) {
     const by={};
-    filtered.forEach(l=>{ if(!by[l.task]) by[l.task]={name:l.taskName,icon:l.taskIcon||'',ms:0,count:0}; by[l.task].ms+=l.duration; by[l.task].count++; });
+    filtered.forEach(l=>{ if(!by[l.task]) by[l.task]={name:l.taskName,icon:l.taskIcon||'📋',ms:0,count:0}; by[l.task].ms+=l.duration; by[l.task].count++; });
     rows = Object.values(by).sort((a,b)=>b.ms-a.ms);
   } else if(summaryTab===1) {
     const by={};
