@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="作業記録">
+<meta name="theme-color" content="#1a1a2e">
+<title>作業時間記録</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --surface: #ffffff;
+    --surface2: #f0f1f3;
+    --text: #1a1d23;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --accent-bg: #eff6ff;
+    --green: #059669;
+    --green-bg: #ecfdf5;
+    --green-border: #6ee7b7;
+    --red: #dc2626;
+    --red-bg: #fef2f2;
+    --radius: 14px;
+    --radius-sm: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: var(--bg); font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP', sans-serif; color: var(--text); overscroll-behavior: none; }
+
+  .header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 17px; font-weight: 600; }
+  .header-date { font-size: 12px; color: var(--text2); }
+  .header-btn { background: var(--surface2); border: none; border-radius: 8px; padding: 7px 12px; font-size: 13px; font-weight: 500; color: var(--text); cursor: pointer; }
+  .header-btn.active { background: var(--accent); color: white; }
+
+  /* 接続状態インジケータ */
+  .status-bar { padding: 6px 16px; font-size: 12px; display: flex; align-items: center; gap: 6px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .status-dot.online { background: var(--green); }
+  .status-dot.offline { background: #f59e0b; }
+  .status-dot.connecting { background: var(--text3); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .screen { display: none; height: calc(100vh - 90px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .screen.active { display: block; }
+  .screen-pad { padding: 16px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+
+  .worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .worker-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 4px; font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: background 0.1s, transform 0.1s; }
+  .worker-btn:active { background: var(--accent-bg); transform: scale(0.97); }
+
+  .worker-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .worker-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
+  .worker-name { font-size: 16px; font-weight: 600; }
+  .worker-sub { font-size: 12px; color: var(--text2); }
+  .change-btn { margin-left: auto; background: var(--surface2); border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: var(--text2); cursor: pointer; }
+
+  .running-banner { margin: 12px 16px; background: var(--green-bg); border: 1px solid var(--green-border); border-radius: var(--radius); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; }
+  .running-task { font-size: 14px; font-weight: 600; color: var(--green); }
+  .running-timer { font-size: 28px; font-weight: 700; color: var(--green); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .stop-btn { background: var(--red); color: white; border: none; border-radius: 10px; padding: 12px 20px; font-size: 15px; font-weight: 600; cursor: pointer; }
+  .stop-btn:active { transform: scale(0.97); }
+
+  .task-section { padding: 0 16px 4px; }
+  .task-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 10px; cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: transform 0.1s; }
+  .task-card:active { transform: scale(0.97); }
+  .task-card.running { border: 2px solid var(--green); background: var(--green-bg); }
+  .task-icon { font-size: 24px; margin-bottom: 6px; }
+  .task-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .task-card.running .task-name { color: var(--green); }
+
+  .log-section { padding: 0 16px 100px; margin-top: 8px; }
+  .log-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); }
+  .log-item { display: flex; justify-content: space-between; align-items: center; padding: 11px 14px; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-name { font-size: 13px; font-weight: 500; color: var(--text); }
+  .log-range { font-size: 11px; color: var(--text3); margin-top: 1px; }
+  .log-dur { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .log-empty { padding: 20px 14px; font-size: 13px; color: var(--text3); text-align: center; }
+
+  /* 集計画面 */
+  .summary-header { padding: 16px 16px 0; }
+  .seg-control { display: flex; background: var(--surface2); border-radius: 10px; padding: 3px; margin-bottom: 16px; }
+  .seg-btn { flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500; color: var(--text2); border: none; background: transparent; border-radius: 8px; cursor: pointer; }
+  .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+  .summary-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; margin: 0 16px; }
+  .summary-row { display: flex; align-items: center; padding: 13px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-icon { font-size: 18px; width: 28px; text-align: center; flex-shrink: 0; }
+  .summary-mid { flex: 1; min-width: 0; }
+  .summary-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-wrap { height: 4px; background: var(--surface2); border-radius: 2px; margin-top: 4px; }
+  .bar-fill { height: 4px; border-radius: 2px; background: var(--accent); }
+  .summary-time { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .no-data { text-align: center; padding: 40px 16px; color: var(--text3); font-size: 14px; }
+  .export-wrap { padding: 16px; padding-bottom: 40px; }
+  .export-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+  .export-btn:active { transform: scale(0.98); }
+  .export-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+  /* ローディング */
+  .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 999; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 14px; color: var(--text2); }
+
+  /* トースト通知 */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: #1a1d23; color: white; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 500; transition: transform 0.3s; z-index: 1000; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* 日付フィルタ */
+  .date-filter { display: flex; align-items: center; gap: 8px; margin: 0 16px 12px; }
+  .date-filter input[type=date] { flex: 1; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: var(--surface); color: var(--text); }
+  .date-filter label { font-size: 12px; color: var(--text2); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div class="spinner"></div>
+  <div class="loading-text">Firebase に接続中...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<div class="header">
+  <div>
+    <div class="header-title">作業時間記録</div>
+    <div class="header-date" id="header-date"></div>
+  </div>
+  <div style="display:flex;gap:6px">
+    <button class="header-btn active" id="btn-record" onclick="showScreen('worker')">記録</button>
+    <button class="header-btn" id="btn-summary" onclick="showScreen('summary')">集計</button>
+  </div>
+</div>
+
+<div class="status-bar">
+  <div class="status-dot connecting" id="status-dot"></div>
+  <span id="status-text" style="color:var(--text3);font-size:12px">接続中...</span>
+</div>
+
+<!-- 作業者選択 -->
+<div class="screen active" id="screen-worker">
+  <div class="screen-pad">
+    <div class="section-title">作業者を選択</div>
+    <div class="worker-grid" id="worker-grid"></div>
+  </div>
+</div>
+
+<!-- 作業入力 -->
+<div class="screen" id="screen-task">
+  <div class="worker-bar">
+    <div class="worker-avatar" id="w-avatar"></div>
+    <div>
+      <div class="worker-name" id="w-name"></div>
+      <div class="worker-sub">作業項目をタップして開始</div>
+    </div>
+    <button class="change-btn" onclick="showScreen('worker')">変更</button>
+  </div>
+  <div id="running-banner" style="display:none" class="running-banner">
+    <div>
+      <div class="running-task" id="running-task-name"></div>
+      <div class="running-timer" id="running-timer">0:00</div>
+    </div>
+    <button class="stop-btn" onclick="stopTask()">終了</button>
+  </div>
+  <div class="task-section">
+    <div class="section-title">段取り・管理</div>
+    <div class="task-grid" id="tg-mgmt"></div>
+  </div>
+  <div class="task-section" style="margin-top:14px">
+    <div class="section-title">加工作業</div>
+    <div class="task-grid" id="tg-work"></div>
+  </div>
+  <div class="task-section" style="margin-top:14px">
+    <div class="section-title">その他</div>
+    <div class="task-grid" id="tg-other"></div>
+  </div>
+  <div class="log-section">
+    <div class="section-title" style="margin-top:14px;margin-bottom:8px">本日の記録</div>
+    <div class="log-card" id="today-log"></div>
+  </div>
+</div>
+
+<!-- 集計 -->
+<div class="screen" id="screen-summary">
+  <div class="summary-header">
+    <div class="seg-control" id="seg-control"></div>
+  </div>
+  <div class="date-filter">
+    <label>期間：</label>
+    <input type="date" id="filter-from">
+    <span style="font-size:12px;color:var(--text2)">〜</span>
+    <input type="date" id="filter-to">
+  </div>
+  <div id="summary-content"></div>
+  <div class="export-wrap">
+    <button class="export-btn" onclick="exportCSV()">📥 CSVで出力</button>
+    <button class="export-btn secondary" onclick="refreshSummary()">🔄 最新データを取得</button>
+  </div>
+</div>
+
+<!-- Firebase SDK (CDN) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<script>
+// ===== Firebase 設定 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyArY7yrbR9-1HigcXYc3c5Iv4EXs9dSsmQ",
+  authDomain: "factory-tracker-e01a3.firebaseapp.com",
+  databaseURL: "https://factory-tracker-e01a3-default-rtdb.firebaseio.com",
+  projectId: "factory-tracker-e01a3",
+  storageBucket: "factory-tracker-e01a3.firebasestorage.app",
+  messagingSenderId: "114211863525",
+  appId: "1:114211863525:web:3326b69a611f42c70f8d0c"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===== 作業者・タスク定義 =====
+const WORKERS = ['田中','鈴木','佐藤','山田','伊藤','渡辺','加藤','中村','小林','吉田','松本','井上','木村','林','斎藤','清水','山口','高橋','中島','石田','藤田','岡田','前田','後藤','長谷川','石川','近藤','坂本','遠藤','福田'];
+
+const TASKS_MGMT = [
+  { id:'prep_all',  name:'全体段取り',   icon:'⚙️' },
+  { id:'prep_ind',  name:'個別段取り',   icon:'🔧' },
+  { id:'inspect',   name:'検査・確認',   icon:'🔍' },
+  { id:'transport', name:'運搬・移動',   icon:'🚚' },
+];
+const TASKS_WORK = [
+  { id:'cut',     name:'切断',           icon:'✂️' },
+  { id:'machine', name:'マシニング',     icon:'🔩' },
+  { id:'press',   name:'プレス',         icon:'⬇️' },
+  { id:'drill',   name:'ボール盤',       icon:'🔄' },
+  { id:'weld',    name:'溶接',           icon:'🔥' },
+  { id:'deburr',  name:'自動バリ取り機', icon:'⚡' },
+  { id:'pack',    name:'梱包',           icon:'📦' },
+  { id:'wash',    name:'洗浄',           icon:'💧' },
+];
+const TASKS_OTHER = [
+  { id:'meeting', name:'会議・打ち合わせ', icon:'💬' },
+  { id:'kaizen',  name:'改善活動',         icon:'📈' },
+  { id:'other',   name:'その他',           icon:'📋' },
+];
+const ALL_TASKS = [...TASKS_MGMT, ...TASKS_WORK, ...TASKS_OTHER];
+
+// ===== 状態 =====
+let worker = null, runningTask = null, runningStart = null, timerInterval = null;
+let allLogs = [];
+let summaryTab = 0;
+let isOnline = false;
+
+// ===== ユーティリティ =====
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function fmtTimer(ms) {
+  const s=Math.floor(ms/1000), m=Math.floor(s/60), h=Math.floor(m/60);
+  if(h>0) return h+':'+(m%60<10?'0':'')+(m%60)+':'+(s%60<10?'0':'')+(s%60);
+  return m+':'+(s%60<10?'0':'')+(s%60);
+}
+function fmtShort(ms) {
+  const m=Math.floor(ms/60000), h=Math.floor(m/60);
+  if(h>0) return h+'時間'+(m%60>0?(m%60)+'分':'');
+  return m+'分';
+}
+function fmtTime(ts) {
+  const d=new Date(ts);
+  return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+function fmtDate(ts) {
+  const d=new Date(ts);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ===== Firebase 接続状態監視 =====
+db.ref('.info/connected').on('value', snap => {
+  isOnline = snap.val() === true;
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  dot.className = 'status-dot ' + (isOnline ? 'online' : 'offline');
+  txt.textContent = isOnline ? 'クラウド同期中' : 'オフライン（記録は後で同期）';
+  txt.style.color = isOnline ? 'var(--green)' : '#f59e0b';
+  document.getElementById('loading-overlay').style.display = 'none';
+});
+
+// ===== Firebase からログ取得 =====
+function loadLogs() {
+  db.ref('logs').on('value', snap => {
+    allLogs = [];
+    snap.forEach(child => {
+      allLogs.push({ key: child.key, ...child.val() });
+    });
+    if(document.getElementById('screen-summary').classList.contains('active')) renderSummary();
+    if(document.getElementById('screen-task').classList.contains('active')) renderTodayLog();
+  });
+}
+
+// ===== Firebase へ保存 =====
+function saveLog(logData) {
+  const newRef = db.ref('logs').push();
+  newRef.set(logData)
+    .then(() => showToast('✓ クラウドに保存しました'))
+    .catch(() => showToast('⚠ 保存失敗。再試行します'));
+}
+
+// ===== 画面遷移 =====
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('btn-record').classList.toggle('active', name==='worker'||name==='task');
+  document.getElementById('btn-summary').classList.toggle('active', name==='summary');
+  if(name==='worker')   { document.getElementById('screen-worker').classList.add('active'); }
+  else if(name==='task'){ document.getElementById('screen-task').classList.add('active'); renderTaskScreen(); }
+  else if(name==='summary'){ document.getElementById('screen-summary').classList.add('active'); renderSummary(); }
+}
+
+// ===== 作業者選択 =====
+function initWorkers() {
+  document.getElementById('worker-grid').innerHTML = WORKERS.map(w =>
+    `<button class="worker-btn" onclick="selectWorker('${w}')">${w}</button>`
+  ).join('');
+  const d=new Date();
+  document.getElementById('header-date').textContent = d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
+  const todayStr = today();
+  document.getElementById('filter-from').value = todayStr;
+  document.getElementById('filter-to').value = todayStr;
+}
+
+function selectWorker(name) {
+  worker = name;
+  document.getElementById('w-avatar').textContent = name.slice(0,2);
+  document.getElementById('w-name').textContent = name + ' さん';
+  showScreen('task');
+}
+
+// ===== タスク画面 =====
+function renderGroup(tasks, containerId) {
+  document.getElementById(containerId).innerHTML = tasks.map(t => {
+    const on = runningTask && runningTask.id === t.id;
+    return `<div class="task-card${on?' running':''}" onclick="startTask('${t.id}')">
+      <div class="task-icon">${t.icon}</div>
+      <div class="task-name">${t.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderTaskScreen() {
+  renderGroup(TASKS_MGMT, 'tg-mgmt');
+  renderGroup(TASKS_WORK, 'tg-work');
+  renderGroup(TASKS_OTHER, 'tg-other');
+  renderTodayLog();
+}
+
+function startTask(taskId) {
+  if(runningTask) stopTask();
+  runningTask = ALL_TASKS.find(t=>t.id===taskId);
+  runningStart = Date.now();
+  document.getElementById('running-banner').style.display='flex';
+  document.getElementById('running-task-name').textContent = runningTask.icon+' '+runningTask.name+' 計測中';
+  clearInterval(timerInterval);
+  timerInterval = setInterval(()=>{
+    document.getElementById('running-timer').textContent = fmtTimer(Date.now()-runningStart);
+  }, 1000);
+  renderGroup(TASKS_MGMT,'tg-mgmt');
+  renderGroup(TASKS_WORK,'tg-work');
+  renderGroup(TASKS_OTHER,'tg-other');
+}
+
+function stopTask() {
+  if(!runningTask) return;
+  const end=Date.now(), dur=end-runningStart;
+  const logData = {
+    worker, task:runningTask.id, taskName:runningTask.name, taskIcon:runningTask.icon,
+    start:runningStart, end, duration:dur, date:fmtDate(runningStart), ts: firebase.database.ServerValue.TIMESTAMP
+  };
+  saveLog(logData);
+  clearInterval(timerInterval);
+  runningTask=null; runningStart=null;
+  document.getElementById('running-banner').style.display='none';
+  renderTaskScreen();
+}
+
+function renderTodayLog() {
+  const tl = allLogs.filter(l=>l.worker===worker && l.date===today());
+  const el = document.getElementById('today-log');
+  if(!tl.length){ el.innerHTML='<div class="log-empty">まだ記録がありません</div>'; return; }
+  el.innerHTML = tl.slice().sort((a,b)=>b.start-a.start).slice(0,8).map(l=>
+    `<div class="log-item">
+      <div><div class="log-name">${l.taskIcon||''} ${l.taskName}</div>
+      <div class="log-range">${fmtTime(l.start)} → ${fmtTime(l.end)}</div></div>
+      <div class="log-dur">${fmtShort(l.duration)}</div>
+    </div>`
+  ).join('');
+}
+
+// ===== 集計画面 =====
+function refreshSummary() {
+  showToast('🔄 データを更新中...');
+  renderSummary();
+}
+
+function renderSummary() {
+  const tabs = ['作業別','作業者別','日別'];
+  document.getElementById('seg-control').innerHTML = tabs.map((t,i)=>
+    `<button class="seg-btn${summaryTab===i?' active':''}" onclick="setSummaryTab(${i})">${t}</button>`
+  ).join('');
+
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+  const filtered = allLogs.filter(l => (!from||l.date>=from) && (!to||l.date<=to));
+
+  const content = document.getElementById('summary-content');
+  if(!filtered.length){ content.innerHTML='<div class="no-data">この期間の記録がありません</div>'; return; }
+
+  let rows = [];
+  if(summaryTab===0) {
+    const by={};
+    filtered.forEach(l=>{ if(!by[l.task]) by[l.task]={name:l.taskName,icon:l.taskIcon||'',ms:0,count:0}; by[l.task].ms+=l.duration; by[l.task].count++; });
+    rows = Object.values(by).sort((a,b)=>b.ms-a.ms);
+  } else if(summaryTab===1) {
+    const by={};
+    filtered.forEach(l=>{ if(!by[l.worker]) by[l.worker]={name:l.worker,icon:'👤',ms:0,count:0}; by[l.worker].ms+=l.duration; by[l.worker].count++; });
+    rows = Object.values(by).sort((a,b)=>b.ms-a.ms);
+  } else {
+    const by={};
+    filtered.forEach(l=>{ if(!by[l.date]) by[l.date]={name:l.date,icon:'📅',ms:0,count:0}; by[l.date].ms+=l.duration; by[l.date].count++; });
+    rows = Object.values(by).sort((a,b)=>b.name.localeCompare(a.name));
+  }
+
+  const max = rows[0].ms;
+  content.innerHTML = `<div class="summary-card">${rows.map(r=>
+    `<div class="summary-row">
+      <div class="summary-icon">${r.icon}</div>
+      <div class="summary-mid">
+        <div class="summary-name">${r.name}</div>
+        <div class="bar-wrap"><div class="bar-fill" style="width:${Math.round(r.ms/max*100)}%"></div></div>
+      </div>
+      <div class="summary-time">${fmtShort(r.ms)}</div>
+    </div>`
+  ).join('')}</div>`;
+}
+
+function setSummaryTab(i) { summaryTab=i; renderSummary(); }
+
+document.getElementById('filter-from').addEventListener('change', renderSummary);
+document.getElementById('filter-to').addEventListener('change', renderSummary);
+
+// ===== CSV出力 =====
+function exportCSV() {
+  const from = document.getElementById('filter-from').value;
+  const to   = document.getElementById('filter-to').value;
+  const filtered = allLogs.filter(l=>(!from||l.date>=from)&&(!to||l.date<=to));
+  if(!filtered.length){ showToast('出力するデータがありません'); return; }
+  const rows=[['日付','作業者','作業項目','開始時刻','終了時刻','時間(分)']];
+  filtered.sort((a,b)=>a.start-b.start).forEach(l=>
+    rows.push([l.date,l.worker,l.taskName,fmtTime(l.start),fmtTime(l.end),Math.round(l.duration/60000)])
+  );
+  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
+  a.download='作業時間記録_'+(from||'all')+'_'+(to||'all')+'.csv';
+  a.click();
+  showToast('📥 CSVを出力しました');
+}
+
+// ===== 初期化 =====
+initWorkers();
+loadLogs();
+
+setTimeout(()=>{
+  if(document.getElementById('loading-overlay').style.display !== 'none') {
+    document.getElementById('loading-overlay').style.display='none';
+    showToast('⚠ オフラインモードで起動しました');
+  }
+}, 5000);
+</script>
+</body>
+</html>
