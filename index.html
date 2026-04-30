@@ -70,9 +70,11 @@
 
   .task-section { padding: 0 16px 4px; }
   .task-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 10px; cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: transform 0.1s; }
+  .task-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 10px; cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: transform 0.1s, opacity 0.2s; }
   .task-card:active { transform: scale(0.97); }
   .task-card.running { border: 2px solid var(--green); background: var(--green-bg); }
+  .task-card.locked { opacity: 0.35; pointer-events: none; cursor: not-allowed; }
+  .task-card.running.locked { opacity: 1; }
   .task-icon { font-size: 24px; margin-bottom: 6px; line-height: 1.2; }
   .task-name { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; }
   .task-card.running .task-name { color: var(--green); }
@@ -86,8 +88,8 @@
   .log-dur { font-size: 13px; font-weight: 600; color: var(--text2); }
   .log-empty { padding: 20px 14px; font-size: 13px; color: var(--text3); text-align: center; }
   .log-actions { display: flex; gap: 6px; align-items: center; margin-left: 8px; }
-  .log-edit-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--text2); cursor: pointer; }
-  .log-del-btn { background: var(--red-bg); border: 1px solid #fecaca; border-radius: 6px; padding: 4px 8px; font-size: 11px; color: var(--red); cursor: pointer; }
+  .log-edit-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--text2); cursor: pointer; }
+  .log-del-btn { background: var(--red-bg); border: 1px solid #fecaca; border-radius: 8px; padding: 9px 16px; font-size: 13px; font-weight: 600; color: var(--red); cursor: pointer; }
 
   /* 集計画面 */
   .summary-header { padding: 16px 16px 0; }
@@ -630,10 +632,14 @@ function selectWorker(name) {
 // ===== タスク画面 =====
 function renderTaskCard(t) {
   const on = runningTask && runningTask.id === t.id;
+  const locked = !!runningTask; // 実行中は全カード（実行中含む）タップ不可
   const iconHtml = t.svgIcon
     ? `<div class="task-icon">${t.svgIcon}</div>`
     : `<div class="task-icon">${t.icon}</div>`;
-  return `<div class="task-card${on?' running':''}" onclick="startTask('${t.id}')">
+  let cls = 'task-card';
+  if(on) cls += ' running';
+  if(locked) cls += ' locked';
+  return `<div class="${cls}" onclick="startTask('${t.id}')">
     ${iconHtml}
     <div class="task-name">${t.name}</div>
   </div>`;
