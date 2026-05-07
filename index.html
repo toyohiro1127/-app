@@ -640,7 +640,7 @@ function renderActiveSessions() {
         <div class="active-task">${s.taskObj.name}</div>
       </div>
       <div class="active-elapsed" data-worker="${name}">${fmtTimer(now - s.start)}</div>
-      <button class="stop-btn-sm" onclick="event.stopPropagation();stopTask('${name}')">終了</button>
+      <button class="stop-btn-sm" onclick="event.stopPropagation();confirmStopFromPanel('${name}')">終了</button>
     </div>`;
   }).join('');
 }
@@ -714,6 +714,11 @@ function startTask(taskId) {
   activeSessions[currentWorker] = { taskObj, start: Date.now() };
   startGlobalTimer();
   renderTaskScreen();
+}
+
+function confirmStopFromPanel(workerName) {
+  if (!confirm(workerName + ' さんの計測を終了しますか？')) return;
+  stopTask(workerName);
 }
 
 function stopTask(workerName) {
