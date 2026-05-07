@@ -51,10 +51,24 @@
   .section-title { font-size: 13px; font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
 
   .worker-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-  .worker-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 4px; font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: background 0.1s, transform 0.1s; }
+  .worker-btn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 4px; font-size: 15px; font-weight: 500; color: var(--text); cursor: pointer; text-align: center; box-shadow: var(--shadow); transition: background 0.1s, transform 0.1s; position: relative; }
   .worker-btn:active { background: var(--accent-bg); transform: scale(0.97); }
   .worker-btn.red { color: var(--red); }
   .worker-btn.green-w { color: var(--green); }
+  .worker-btn.active-session { border-color: var(--green); border-width: 2px; background: var(--green-bg); }
+  .worker-pulse { position: absolute; top: 5px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+
+  /* 計測中パネル */
+  .active-sessions { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--green-border); box-shadow: var(--shadow); overflow: hidden; margin-bottom: 16px; }
+  .active-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .active-item:last-child { border-bottom: none; }
+  .active-item:active { background: var(--surface2); }
+  .active-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--green-bg); color: var(--green); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; border: 2px solid var(--green-border); }
+  .active-name { font-size: 14px; font-weight: 600; }
+  .active-task { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .active-elapsed { font-size: 17px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; white-space: nowrap; margin-right: 4px; }
+  .stop-btn-sm { background: var(--red); color: white; border: none; border-radius: 8px; padding: 8px 12px; font-size: 12px; font-weight: 600; cursor: pointer; flex-shrink: 0; }
+  .stop-btn-sm:active { transform: scale(0.95); }
 
   .worker-bar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
   .worker-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--accent-bg); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: var(--accent); flex-shrink: 0; }
@@ -94,7 +108,7 @@
   /* 集計画面 */
   .summary-header { padding: 16px 16px 0; }
   .seg-control { display: flex; background: var(--surface2); border-radius: 10px; padding: 3px; margin-bottom: 16px; }
-  .seg-btn { flex: 1; padding: 8px 4px; font-size: 12px; font-weight: 500; color: var(--text2); border: none; background: transparent; border-radius: 8px; cursor: pointer; }
+  .seg-btn { flex: 1; padding: 8px 2px; font-size: 11px; font-weight: 500; color: var(--text2); border: none; background: transparent; border-radius: 8px; cursor: pointer; }
   .seg-btn.active { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
   .summary-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); overflow: hidden; margin: 0 16px; }
   .summary-row { display: flex; align-items: center; padding: 13px 14px; border-bottom: 1px solid var(--border); gap: 10px; }
@@ -110,6 +124,16 @@
   .export-btn { width: 100%; background: var(--accent); color: white; border: none; border-radius: var(--radius); padding: 15px; font-size: 15px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
   .export-btn:active { transform: scale(0.98); }
   .export-btn.secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+
+  /* 記録一覧（編集可能） */
+  .records-list { margin: 0 16px 16px; }
+  .record-item { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); box-shadow: var(--shadow); margin-bottom: 8px; padding: 12px 14px; }
+  .record-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+  .record-worker { font-size: 13px; font-weight: 700; color: var(--accent); }
+  .record-task { font-size: 13px; font-weight: 500; color: var(--text); }
+  .record-meta { font-size: 11px; color: var(--text3); margin-bottom: 8px; }
+  .record-dur { font-size: 13px; font-weight: 600; color: var(--text2); }
+  .record-actions { display: flex; gap: 6px; }
 
   /* ローディング */
   .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; z-index: 999; }
@@ -129,7 +153,7 @@
   /* 編集モーダル */
   .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 500; display: none; align-items: flex-end; }
   .modal-overlay.open { display: flex; }
-  .modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 20px 16px 40px; }
+  .modal-sheet { background: var(--surface); border-radius: 20px 20px 0 0; width: 100%; padding: 20px 16px 40px; max-height: 90vh; overflow-y: auto; }
   .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; text-align: center; }
   .modal-field { margin-bottom: 14px; }
   .modal-label { font-size: 12px; color: var(--text2); margin-bottom: 4px; }
@@ -156,6 +180,10 @@
 <div class="modal-overlay" id="edit-modal">
   <div class="modal-sheet">
     <div class="modal-title">記録を編集</div>
+    <div class="modal-field">
+      <div class="modal-label">担当者</div>
+      <select class="modal-select" id="edit-worker"></select>
+    </div>
     <div class="modal-field">
       <div class="modal-label">作業項目</div>
       <select class="modal-select" id="edit-task"></select>
@@ -196,6 +224,11 @@
 <!-- 作業者選択 -->
 <div class="screen active" id="screen-worker">
   <div class="screen-pad">
+    <!-- 計測中パネル -->
+    <div id="active-sessions-panel" style="display:none">
+      <div class="section-title" style="color:var(--green);margin-bottom:8px">▶ 計測中</div>
+      <div class="active-sessions" id="active-sessions-list"></div>
+    </div>
     <div class="section-title">作業者を選択</div>
     <div class="worker-grid" id="worker-grid"></div>
   </div>
@@ -207,9 +240,9 @@
     <div class="worker-avatar" id="w-avatar"></div>
     <div>
       <div class="worker-name" id="w-name"></div>
-      <div class="worker-sub">作業項目をタップして開始</div>
+      <div class="worker-sub" id="w-sub">作業項目をタップして開始</div>
     </div>
-    <button class="change-btn" onclick="showScreen('worker')">変更</button>
+    <button class="change-btn" onclick="showScreen('worker')">← 一覧</button>
   </div>
   <div id="running-banner" style="display:none" class="running-banner">
     <div>
@@ -308,7 +341,6 @@ const WORKERS = [
 
 // ===== SVGアイコン定義 =====
 
-// 鉄パレット SVG（押出材料を入れる鉄パレット）
 const PALLET_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
   <rect x="4" y="36" width="40" height="5" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="1"/>
   <rect x="6" y="38" width="8" height="6" rx="1" fill="#546E7A"/>
@@ -325,7 +357,6 @@ const PALLET_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" 
   <rect x="27" y="15" width="3" height="21" rx="0.5" fill="#FFA726" opacity="0.8"/>
 </svg>`;
 
-// チップソー SVG
 const CHIPSAW_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
   <circle cx="22" cy="24" r="16" fill="#B0BEC5" stroke="#78909C" stroke-width="1.5"/>
   <path d="M22 8 L24 13 L22 11 L20 13 Z" fill="#546E7A"/>
@@ -359,148 +390,91 @@ const CHIPSAW_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"
   <circle cx="40" cy="24" r="2" fill="#78909C"/>
 </svg>`;
 
-// プレス機 SVG（油圧プレス：フレーム・ラム・テーブル）
 const PRESS_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <!-- 左コラム -->
   <rect x="4" y="6" width="6" height="38" rx="1.5" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- 右コラム -->
   <rect x="38" y="6" width="6" height="38" rx="1.5" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- トップビーム -->
   <rect x="3" y="4" width="42" height="7" rx="2" fill="#546E7A" stroke="#455A64" stroke-width="0.8"/>
-  <!-- ボトムベース -->
   <rect x="3" y="38" width="42" height="7" rx="2" fill="#546E7A" stroke="#455A64" stroke-width="0.8"/>
-  <!-- シリンダー本体 -->
   <rect x="18" y="10" width="12" height="14" rx="2" fill="#90A4AE" stroke="#78909C" stroke-width="1"/>
-  <!-- シリンダーハイライト -->
   <rect x="20" y="11" width="3" height="12" rx="1" fill="#B0BEC5" opacity="0.5"/>
-  <!-- ラム（ピストンロッド） -->
   <rect x="21" y="23" width="6" height="8" rx="1" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.8"/>
-  <!-- 油圧ホース -->
   <path d="M30 14 Q35 14 35 18" stroke="#FF7043" stroke-width="1.5" stroke-linecap="round" fill="none"/>
-  <!-- プレスヘッド（金型上） -->
   <rect x="16" y="30" width="16" height="4" rx="1" fill="#455A64" stroke="#37474F" stroke-width="0.8"/>
-  <!-- ワーク（被加工物） -->
   <rect x="14" y="34" width="20" height="3" rx="0.5" fill="#FFA726" stroke="#FB8C00" stroke-width="0.5"/>
-  <!-- テーブル -->
   <rect x="10" y="36" width="28" height="3" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- 圧力ゲージ（丸） -->
   <circle cx="37" cy="16" r="3" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.8"/>
   <line x1="37" y1="16" x2="38.5" y2="14.8" stroke="#455A64" stroke-width="0.8"/>
 </svg>`;
 
-// ボール盤 SVG（直立ボール盤：コラム・テーブル・スピンドル）
 const DRILL_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <!-- ベース -->
   <rect x="8" y="40" width="32" height="5" rx="2" fill="#546E7A" stroke="#455A64" stroke-width="0.8"/>
-  <!-- コラム（主柱） -->
   <rect x="21" y="14" width="6" height="28" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- テーブル -->
   <rect x="10" y="30" width="28" height="4" rx="1.5" fill="#90A4AE" stroke="#78909C" stroke-width="0.8"/>
-  <!-- テーブルアーム -->
   <rect x="20" y="28" width="8" height="4" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.6"/>
-  <!-- ヘッド本体 -->
   <rect x="14" y="6" width="20" height="14" rx="3" fill="#90A4AE" stroke="#78909C" stroke-width="1"/>
-  <!-- ヘッドハイライト -->
   <rect x="16" y="7" width="5" height="12" rx="1.5" fill="#B0BEC5" opacity="0.4"/>
-  <!-- スピンドルハウジング -->
   <rect x="20" y="18" width="8" height="6" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- チャック -->
   <rect x="21" y="23" width="6" height="5" rx="1" fill="#546E7A" stroke="#455A64" stroke-width="0.8"/>
-  <!-- ドリルビット -->
   <rect x="23" y="27" width="2" height="8" rx="0.5" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.5"/>
   <path d="M23 35 L24 38 L25 35 Z" fill="#90A4AE"/>
-  <!-- 送りハンドル -->
   <circle cx="37" cy="18" r="1.5" fill="#78909C" stroke="#546E7A" stroke-width="0.6"/>
   <line x1="34" y1="16" x2="37" y2="18" stroke="#78909C" stroke-width="1.2" stroke-linecap="round"/>
   <line x1="34" y1="20" x2="37" y2="18" stroke="#78909C" stroke-width="1.2" stroke-linecap="round"/>
   <line x1="31" y1="18" x2="37" y2="18" stroke="#546E7A" stroke-width="1" stroke-linecap="round"/>
-  <!-- プーリーカバー -->
   <ellipse cx="24" cy="8" rx="6" ry="3" fill="#B0BEC5" stroke="#90A4AE" stroke-width="0.8"/>
-  <!-- ワーク -->
   <rect x="13" y="32" width="10" height="3" rx="0.5" fill="#FFA726" stroke="#FB8C00" stroke-width="0.5"/>
 </svg>`;
 
-// マシニングセンタ SVG（立形マシニング：コラム・スピンドル・テーブル・ATC）
 const MACHINING_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <!-- 機械本体フレーム -->
   <rect x="3" y="8" width="38" height="36" rx="2" fill="#90A4AE" stroke="#78909C" stroke-width="1"/>
-  <!-- フレーム内部（作業空間） -->
   <rect x="7" y="12" width="30" height="26" rx="1" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.5"/>
-  <!-- コラム（背面柱） -->
   <rect x="5" y="8" width="8" height="36" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- スピンドルヘッド -->
   <rect x="9" y="12" width="12" height="10" rx="2" fill="#546E7A" stroke="#455A64" stroke-width="0.8"/>
-  <!-- スピンドル -->
   <rect x="13" y="21" width="4" height="6" rx="1" fill="#455A64" stroke="#37474F" stroke-width="0.7"/>
-  <!-- エンドミル（工具） -->
   <rect x="14" y="26" width="2" height="7" rx="0.5" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.5"/>
-  <!-- 工具フルート（溝） -->
   <line x1="14.5" y1="27" x2="15.5" y2="33" stroke="#90A4AE" stroke-width="0.4"/>
   <line x1="15.5" y1="27" x2="14.5" y2="33" stroke="#90A4AE" stroke-width="0.4"/>
-  <!-- テーブル -->
   <rect x="8" y="33" width="28" height="4" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- テーブルTスロット -->
   <line x1="10" y1="35" x2="34" y2="35" stroke="#546E7A" stroke-width="0.6" stroke-dasharray="2,2"/>
-  <!-- ワーク（加工物） -->
   <rect x="18" y="28" width="14" height="6" rx="0.5" fill="#FFA726" stroke="#FB8C00" stroke-width="0.5"/>
-  <!-- ATC（自動工具交換装置）マガジン -->
   <rect x="36" y="8" width="9" height="18" rx="2" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
   <circle cx="40" cy="13" r="2.5" fill="#B0BEC5" stroke="#90A4AE" stroke-width="0.6"/>
   <circle cx="40" cy="19" r="2.5" fill="#B0BEC5" stroke="#90A4AE" stroke-width="0.6"/>
   <circle cx="40" cy="13" r="1" fill="#546E7A"/>
   <circle cx="40" cy="19" r="1" fill="#546E7A"/>
-  <!-- 操作パネル -->
   <rect x="36" y="28" width="9" height="14" rx="1.5" fill="#455A64" stroke="#37474F" stroke-width="0.8"/>
   <rect x="37.5" y="29.5" width="6" height="5" rx="0.5" fill="#1a1d23"/>
   <circle cx="38.5" cy="37" r="1" fill="#4CAF50"/>
   <circle cx="41" cy="37" r="1" fill="#FF7043"/>
   <circle cx="43.5" cy="37" r="1" fill="#FFA726"/>
-  <!-- 切削油ノズル -->
   <path d="M21 23 Q19 26 17 30" stroke="#29B6F6" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.7"/>
   <path d="M24 23 Q22 26 20 30" stroke="#29B6F6" stroke-width="1" stroke-linecap="round" fill="none" opacity="0.5"/>
 </svg>`;
 
-// ジーベック バリ取りブラシ SVG（放射状ナイロンブラシ）
 const XEBEC_SVG = `<svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none">
-  <!-- シャンク（軸） -->
   <rect x="22" y="2" width="4" height="12" rx="1" fill="#90A4AE" stroke="#78909C" stroke-width="0.8"/>
-  <!-- シャンク上部チャック溝 -->
   <rect x="22.5" y="3" width="3" height="2" rx="0.3" fill="#78909C"/>
-  <!-- ブラシホルダー（中心ハブ） -->
   <circle cx="24" cy="24" r="5" fill="#546E7A" stroke="#455A64" stroke-width="1"/>
   <circle cx="24" cy="24" r="2.5" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- シャンクとハブの接続部 -->
   <rect x="21" y="12" width="6" height="6" rx="1" fill="#78909C" stroke="#546E7A" stroke-width="0.8"/>
-  <!-- 放射状ブラシ繊維（ナイロンフィラメント）12方向 -->
-  <!-- 上 0° -->
   <path d="M24 19 C23.5 17 23 15 23.5 13" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M24 19 C24.5 17 25 15 24.5 13" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 上右 30° -->
   <path d="M26.5 20.5 C28 19 29.5 17.5 30.5 15.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M27 21.5 C28.8 20.5 30.5 19 31 17" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 右 90° -->
   <path d="M29 24 C31 23.5 33 23 35 23.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M29 24 C31 24.5 33 25 35 24.5" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 下右 150° -->
   <path d="M26.5 27.5 C28 29 29.5 30.5 30.5 32.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M27 26.5 C28.8 27.5 30.5 29 31 31" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 下 180° -->
   <path d="M24 29 C23.5 31 23 33 23.5 35" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M24 29 C24.5 31 25 33 24.5 35" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 下左 210° -->
   <path d="M21.5 27.5 C20 29 18.5 30.5 17.5 32.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M21 26.5 C19.2 27.5 17.5 29 17 31" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 左 270° -->
   <path d="M19 24 C17 23.5 15 23 13 23.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M19 24 C17 24.5 15 25 13 24.5" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- 上左 330° -->
   <path d="M21.5 20.5 C20 19 18.5 17.5 17.5 15.5" stroke="#90CAF9" stroke-width="1.5" stroke-linecap="round" fill="none"/>
   <path d="M21 21.5 C19.2 20.5 17.5 19 17 17" stroke="#64B5F6" stroke-width="1.2" stroke-linecap="round" fill="none"/>
-  <!-- ブラシ外周（参考円、薄く） -->
   <circle cx="24" cy="24" r="12" stroke="#90CAF9" stroke-width="0.4" stroke-dasharray="2,3" opacity="0.4"/>
-  <!-- 中心ボルト -->
   <circle cx="24" cy="24" r="1.5" fill="#CFD8DC" stroke="#90A4AE" stroke-width="0.5"/>
-  <!-- XEBECブランドカラーライン（オレンジ） -->
   <rect x="21" y="15" width="6" height="1.5" rx="0.5" fill="#FF7043" opacity="0.85"/>
 </svg>`;
 
@@ -528,7 +502,10 @@ const TASKS_OTHER = [
 const ALL_TASKS = [...TASKS_MGMT, ...TASKS_WORK, ...TASKS_OTHER];
 
 // ===== 状態 =====
-let worker = null, runningTask = null, runningStart = null, timerInterval = null;
+// activeSessions: { workerName: { taskObj, start } } - 複数人同時計測
+let currentWorker = null;
+let activeSessions = {};
+let globalTimer = null;
 let allLogs = [];
 let summaryTab = 0;
 let isOnline = false;
@@ -561,9 +538,25 @@ function showToast(msg) {
   t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2200);
 }
-function getTaskIcon(task) {
-  if(task.svgIcon) return task.svgIcon;
-  return task.icon || '📋';
+
+// ===== グローバルタイマー（全セッションのタイマーを一括更新） =====
+function startGlobalTimer() {
+  if (globalTimer) return;
+  globalTimer = setInterval(updateAllTimers, 1000);
+}
+
+function updateAllTimers() {
+  const now = Date.now();
+  // 計測中パネルの経過時間を更新
+  document.querySelectorAll('.active-elapsed[data-worker]').forEach(el => {
+    const s = activeSessions[el.dataset.worker];
+    if (s) el.textContent = fmtTimer(now - s.start);
+  });
+  // タスク画面のタイマーを更新
+  const timerEl = document.getElementById('running-timer');
+  if (timerEl && currentWorker && activeSessions[currentWorker]) {
+    timerEl.textContent = fmtTimer(now - activeSessions[currentWorker].start);
+  }
 }
 
 // ===== Firebase 接続状態監視 =====
@@ -602,28 +595,69 @@ function showScreen(name) {
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById('btn-record').classList.toggle('active', name==='worker'||name==='task');
   document.getElementById('btn-summary').classList.toggle('active', name==='summary');
-  if(name==='worker')   { document.getElementById('screen-worker').classList.add('active'); }
-  else if(name==='task'){ document.getElementById('screen-task').classList.add('active'); renderTaskScreen(); }
-  else if(name==='summary'){ document.getElementById('screen-summary').classList.add('active'); renderSummary(); }
+  if(name==='worker') {
+    document.getElementById('screen-worker').classList.add('active');
+    renderWorkerGrid();
+    renderActiveSessions();
+  } else if(name==='task') {
+    document.getElementById('screen-task').classList.add('active');
+    renderTaskScreen();
+  } else if(name==='summary') {
+    document.getElementById('screen-summary').classList.add('active');
+    renderSummary();
+  }
 }
 
-// ===== 作業者選択 =====
-function initWorkers() {
+// ===== 作業者グリッド =====
+function renderWorkerGrid() {
   document.getElementById('worker-grid').innerHTML = WORKERS.map(w => {
+    const isActive = !!activeSessions[w.name];
     let cls = 'worker-btn';
     if(w.color === 'red') cls += ' red';
     if(w.color === 'green') cls += ' green-w';
-    return `<button class="${cls}" onclick="selectWorker('${w.name}')">${w.name}</button>`;
+    if(isActive) cls += ' active-session';
+    return `<button class="${cls}" onclick="selectWorker('${w.name}')">
+      ${w.name}
+      ${isActive ? '<div class="worker-pulse"></div>' : ''}
+    </button>`;
   }).join('');
-  const d=new Date();
+}
+
+// ===== 計測中パネル =====
+function renderActiveSessions() {
+  const keys = Object.keys(activeSessions);
+  const panel = document.getElementById('active-sessions-panel');
+  const list = document.getElementById('active-sessions-list');
+  if (!keys.length) { panel.style.display = 'none'; return; }
+  panel.style.display = 'block';
+  const now = Date.now();
+  list.innerHTML = keys.map(name => {
+    const s = activeSessions[name];
+    return `<div class="active-item" onclick="selectWorker('${name}')">
+      <div class="active-avatar">${name.slice(0,2)}</div>
+      <div style="flex:1;min-width:0">
+        <div class="active-name">${name}</div>
+        <div class="active-task">${s.taskObj.name}</div>
+      </div>
+      <div class="active-elapsed" data-worker="${name}">${fmtTimer(now - s.start)}</div>
+      <button class="stop-btn-sm" onclick="event.stopPropagation();stopTask('${name}')">終了</button>
+    </div>`;
+  }).join('');
+}
+
+// ===== 初期化 =====
+function initWorkers() {
+  const d = new Date();
   document.getElementById('header-date').textContent = d.getFullYear()+'年'+(d.getMonth()+1)+'月'+d.getDate()+'日';
   const todayStr = today();
   document.getElementById('filter-from').value = todayStr;
   document.getElementById('filter-to').value = todayStr;
+  renderWorkerGrid();
+  renderActiveSessions();
 }
 
 function selectWorker(name) {
-  worker = name;
+  currentWorker = name;
   document.getElementById('w-avatar').textContent = name.slice(0,2);
   document.getElementById('w-name').textContent = name + ' さん';
   showScreen('task');
@@ -631,8 +665,9 @@ function selectWorker(name) {
 
 // ===== タスク画面 =====
 function renderTaskCard(t) {
-  const on = runningTask && runningTask.id === t.id;
-  const locked = !!runningTask; // 実行中は全カード（実行中含む）タップ不可
+  const mySession = currentWorker ? activeSessions[currentWorker] : null;
+  const on = mySession && mySession.taskObj.id === t.id;
+  const locked = !!mySession;
   const iconHtml = t.svgIcon
     ? `<div class="task-icon">${t.svgIcon}</div>`
     : `<div class="task-icon">${t.icon}</div>`;
@@ -650,6 +685,21 @@ function renderGroup(tasks, containerId) {
 }
 
 function renderTaskScreen() {
+  const mySession = currentWorker ? activeSessions[currentWorker] : null;
+  const banner = document.getElementById('running-banner');
+  const sub = document.getElementById('w-sub');
+
+  if (mySession) {
+    banner.style.display = 'flex';
+    const iconText = mySession.taskObj.svgIcon ? '▶' : (mySession.taskObj.icon || '▶');
+    document.getElementById('running-task-name').textContent = iconText + ' ' + mySession.taskObj.name + ' 計測中';
+    document.getElementById('running-timer').textContent = fmtTimer(Date.now() - mySession.start);
+    sub.textContent = '計測中 - 終了ボタンで記録を保存';
+  } else {
+    banner.style.display = 'none';
+    sub.textContent = '作業項目をタップして開始';
+  }
+
   renderGroup(TASKS_MGMT, 'tg-mgmt');
   renderGroup(TASKS_WORK, 'tg-work');
   renderGroup(TASKS_OTHER, 'tg-other');
@@ -657,40 +707,53 @@ function renderTaskScreen() {
 }
 
 function startTask(taskId) {
-  if(runningTask) stopTask();
-  runningTask = ALL_TASKS.find(t=>t.id===taskId);
-  runningStart = Date.now();
-  document.getElementById('running-banner').style.display='flex';
-  const iconText = runningTask.svgIcon ? '▶' : runningTask.icon;
-  document.getElementById('running-task-name').textContent = iconText + ' ' + runningTask.name + ' 計測中';
-  clearInterval(timerInterval);
-  timerInterval = setInterval(()=>{
-    document.getElementById('running-timer').textContent = fmtTimer(Date.now()-runningStart);
-  }, 1000);
-  renderGroup(TASKS_MGMT,'tg-mgmt');
-  renderGroup(TASKS_WORK,'tg-work');
-  renderGroup(TASKS_OTHER,'tg-other');
-}
+  if (!currentWorker) return;
+  if (activeSessions[currentWorker]) stopTask(currentWorker);
 
-function stopTask() {
-  if(!runningTask) return;
-  const end=Date.now(), dur=end-runningStart;
-  const logData = {
-    worker, task:runningTask.id, taskName:runningTask.name, taskIcon:runningTask.icon||'',
-    start:runningStart, end, duration:dur, date:fmtDate(runningStart), ts: firebase.database.ServerValue.TIMESTAMP
-  };
-  saveLog(logData);
-  clearInterval(timerInterval);
-  runningTask=null; runningStart=null;
-  document.getElementById('running-banner').style.display='none';
+  const taskObj = ALL_TASKS.find(t => t.id === taskId);
+  activeSessions[currentWorker] = { taskObj, start: Date.now() };
+  startGlobalTimer();
   renderTaskScreen();
 }
 
+function stopTask(workerName) {
+  if (workerName === undefined) workerName = currentWorker;
+  const s = activeSessions[workerName];
+  if (!s) return;
+
+  const end = Date.now();
+  const logData = {
+    worker: workerName,
+    task: s.taskObj.id,
+    taskName: s.taskObj.name,
+    taskIcon: s.taskObj.icon || '',
+    start: s.start,
+    end,
+    duration: end - s.start,
+    date: fmtDate(s.start),
+    ts: firebase.database.ServerValue.TIMESTAMP
+  };
+  saveLog(logData);
+  delete activeSessions[workerName];
+
+  if (!Object.keys(activeSessions).length) {
+    clearInterval(globalTimer);
+    globalTimer = null;
+  }
+
+  if (document.getElementById('screen-worker').classList.contains('active')) {
+    renderWorkerGrid();
+    renderActiveSessions();
+  } else if (document.getElementById('screen-task').classList.contains('active')) {
+    renderTaskScreen();
+  }
+}
+
 function renderTodayLog() {
-  const tl = allLogs.filter(l=>l.worker===worker && l.date===today());
+  const tl = allLogs.filter(l => l.worker === currentWorker && l.date === today());
   const el = document.getElementById('today-log');
-  if(!tl.length){ el.innerHTML='<div class="log-empty">まだ記録がありません</div>'; return; }
-  el.innerHTML = tl.slice().sort((a,b)=>b.start-a.start).slice(0,15).map(l=>
+  if (!tl.length) { el.innerHTML = '<div class="log-empty">まだ記録がありません</div>'; return; }
+  el.innerHTML = tl.slice().sort((a,b) => b.start-a.start).slice(0,15).map(l =>
     `<div class="log-item">
       <div style="flex:1;min-width:0">
         <div class="log-name">${l.taskIcon||''} ${l.taskName}</div>
@@ -707,10 +770,21 @@ function renderTodayLog() {
 
 // ===== 編集・削除 =====
 function openEditModal(key) {
-  const log = allLogs.find(l=>l.key===key);
-  if(!log) return;
-  const sel = document.getElementById('edit-task');
-  sel.innerHTML = ALL_TASKS.map(t=>`<option value="${t.id}"${t.id===log.task?' selected':''}>${t.name}</option>`).join('');
+  const log = allLogs.find(l => l.key === key);
+  if (!log) return;
+
+  // 担当者セレクト
+  const workerSel = document.getElementById('edit-worker');
+  workerSel.innerHTML = WORKERS.map(w =>
+    `<option value="${w.name}"${w.name === log.worker ? ' selected' : ''}>${w.name}</option>`
+  ).join('');
+
+  // 作業項目セレクト
+  const taskSel = document.getElementById('edit-task');
+  taskSel.innerHTML = ALL_TASKS.map(t =>
+    `<option value="${t.id}"${t.id === log.task ? ' selected' : ''}>${t.name}</option>`
+  ).join('');
+
   document.getElementById('edit-start').value = fmtTime(log.start);
   document.getElementById('edit-end').value   = fmtTime(log.end);
   document.getElementById('edit-key').value   = key;
@@ -723,18 +797,23 @@ function closeEditModal() {
 }
 
 function saveEdit() {
-  const key      = document.getElementById('edit-key').value;
-  const dateStr  = document.getElementById('edit-date').value;
-  const taskId   = document.getElementById('edit-task').value;
-  const startStr = document.getElementById('edit-start').value;
-  const endStr   = document.getElementById('edit-end').value;
-  const task = ALL_TASKS.find(t=>t.id===taskId);
-  if(!task){ showToast('作業項目が不正です'); return; }
+  const key        = document.getElementById('edit-key').value;
+  const dateStr    = document.getElementById('edit-date').value;
+  const workerName = document.getElementById('edit-worker').value;
+  const taskId     = document.getElementById('edit-task').value;
+  const startStr   = document.getElementById('edit-start').value;
+  const endStr     = document.getElementById('edit-end').value;
+
+  const task = ALL_TASKS.find(t => t.id === taskId);
+  if (!task) { showToast('作業項目が不正です'); return; }
+
   const startTs = new Date(dateStr + 'T' + startStr + ':00').getTime();
   const endTs   = new Date(dateStr + 'T' + endStr   + ':00').getTime();
-  if(isNaN(startTs)||isNaN(endTs)){ showToast('時刻が不正です'); return; }
-  if(endTs <= startTs){ showToast('終了時刻は開始より後にしてください'); return; }
+  if (isNaN(startTs)||isNaN(endTs)) { showToast('時刻が不正です'); return; }
+  if (endTs <= startTs) { showToast('終了時刻は開始より後にしてください'); return; }
+
   const updates = {
+    worker:   workerName,
     task:     task.id,
     taskName: task.name,
     taskIcon: task.icon || '',
@@ -742,16 +821,16 @@ function saveEdit() {
     end:      endTs,
     duration: endTs - startTs,
   };
-  db.ref('logs/'+key).update(updates)
-    .then(()=>{ showToast('✓ 記録を更新しました'); closeEditModal(); })
-    .catch(()=>{ showToast('⚠ 更新に失敗しました'); });
+  db.ref('logs/' + key).update(updates)
+    .then(() => { showToast('✓ 記録を更新しました'); closeEditModal(); })
+    .catch(() => { showToast('⚠ 更新に失敗しました'); });
 }
 
 function deleteLog(key) {
-  if(!confirm('この記録を削除しますか？')) return;
-  db.ref('logs/'+key).remove()
-    .then(()=>showToast('🗑 記録を削除しました'))
-    .catch(()=>showToast('⚠ 削除に失敗しました'));
+  if (!confirm('この記録を削除しますか？')) return;
+  db.ref('logs/' + key).remove()
+    .then(() => showToast('🗑 記録を削除しました'))
+    .catch(() => showToast('⚠ 削除に失敗しました'));
 }
 
 // ===== 集計画面 =====
@@ -761,31 +840,55 @@ function refreshSummary() {
 }
 
 function renderSummary() {
-  const tabs = ['作業別','作業者別','日別'];
-  document.getElementById('seg-control').innerHTML = tabs.map((t,i)=>
+  const tabs = ['作業別', '作業者別', '日別', '記録一覧'];
+  document.getElementById('seg-control').innerHTML = tabs.map((t,i) =>
     `<button class="seg-btn${summaryTab===i?' active':''}" onclick="setSummaryTab(${i})">${t}</button>`
   ).join('');
+
   const from = document.getElementById('filter-from').value;
   const to   = document.getElementById('filter-to').value;
   const filtered = allLogs.filter(l => (!from||l.date>=from) && (!to||l.date<=to));
   const content = document.getElementById('summary-content');
-  if(!filtered.length){ content.innerHTML='<div class="no-data">この期間の記録がありません</div>'; return; }
-  let rows = [];
-  if(summaryTab===0) {
-    const by={};
-    filtered.forEach(l=>{ if(!by[l.task]) by[l.task]={name:l.taskName,icon:l.taskIcon||'📋',ms:0,count:0}; by[l.task].ms+=l.duration; by[l.task].count++; });
-    rows = Object.values(by).sort((a,b)=>b.ms-a.ms);
-  } else if(summaryTab===1) {
-    const by={};
-    filtered.forEach(l=>{ if(!by[l.worker]) by[l.worker]={name:l.worker,icon:'👤',ms:0,count:0}; by[l.worker].ms+=l.duration; by[l.worker].count++; });
-    rows = Object.values(by).sort((a,b)=>b.ms-a.ms);
-  } else {
-    const by={};
-    filtered.forEach(l=>{ if(!by[l.date]) by[l.date]={name:l.date,icon:'📅',ms:0,count:0}; by[l.date].ms+=l.duration; by[l.date].count++; });
-    rows = Object.values(by).sort((a,b)=>b.name.localeCompare(a.name));
+
+  // 記録一覧タブ（個別レコード、編集・削除可能）
+  if (summaryTab === 3) {
+    if (!filtered.length) { content.innerHTML = '<div class="no-data">この期間の記録がありません</div>'; return; }
+    const sorted = filtered.slice().sort((a,b) => b.start - a.start);
+    content.innerHTML = '<div class="records-list">' + sorted.map(l =>
+      `<div class="record-item">
+        <div class="record-header">
+          <span class="record-worker">${l.worker}</span>
+          <span class="record-task">${l.taskIcon||''} ${l.taskName}</span>
+        </div>
+        <div class="record-meta">${l.date} &nbsp; ${fmtTime(l.start)} → ${fmtTime(l.end)} &nbsp; <strong>${fmtShort(l.duration)}</strong></div>
+        <div class="record-actions">
+          <button class="log-edit-btn" onclick="openEditModal('${l.key}')">編集</button>
+          <button class="log-del-btn" onclick="deleteLog('${l.key}')">削除</button>
+        </div>
+      </div>`
+    ).join('') + '</div>';
+    return;
   }
+
+  if (!filtered.length) { content.innerHTML = '<div class="no-data">この期間の記録がありません</div>'; return; }
+
+  let rows = [];
+  if (summaryTab === 0) {
+    const by = {};
+    filtered.forEach(l => { if(!by[l.task]) by[l.task]={name:l.taskName,icon:l.taskIcon||'📋',ms:0,count:0}; by[l.task].ms+=l.duration; by[l.task].count++; });
+    rows = Object.values(by).sort((a,b) => b.ms-a.ms);
+  } else if (summaryTab === 1) {
+    const by = {};
+    filtered.forEach(l => { if(!by[l.worker]) by[l.worker]={name:l.worker,icon:'👤',ms:0,count:0}; by[l.worker].ms+=l.duration; by[l.worker].count++; });
+    rows = Object.values(by).sort((a,b) => b.ms-a.ms);
+  } else {
+    const by = {};
+    filtered.forEach(l => { if(!by[l.date]) by[l.date]={name:l.date,icon:'📅',ms:0,count:0}; by[l.date].ms+=l.duration; by[l.date].count++; });
+    rows = Object.values(by).sort((a,b) => b.name.localeCompare(a.name));
+  }
+
   const max = rows[0].ms;
-  content.innerHTML = `<div class="summary-card">${rows.map(r=>
+  content.innerHTML = `<div class="summary-card">${rows.map(r =>
     `<div class="summary-row">
       <div class="summary-icon">${r.icon}</div>
       <div class="summary-mid">
@@ -797,7 +900,7 @@ function renderSummary() {
   ).join('')}</div>`;
 }
 
-function setSummaryTab(i) { summaryTab=i; renderSummary(); }
+function setSummaryTab(i) { summaryTab = i; renderSummary(); }
 
 document.getElementById('filter-from').addEventListener('change', renderSummary);
 document.getElementById('filter-to').addEventListener('change', renderSummary);
@@ -806,16 +909,16 @@ document.getElementById('filter-to').addEventListener('change', renderSummary);
 function exportCSV() {
   const from = document.getElementById('filter-from').value;
   const to   = document.getElementById('filter-to').value;
-  const filtered = allLogs.filter(l=>(!from||l.date>=from)&&(!to||l.date<=to));
-  if(!filtered.length){ showToast('出力するデータがありません'); return; }
-  const rows=[['日付','作業者','作業項目','開始時刻','終了時刻','時間(分)']];
-  filtered.sort((a,b)=>a.start-b.start).forEach(l=>
-    rows.push([l.date,l.worker,l.taskName,fmtTime(l.start),fmtTime(l.end),Math.round(l.duration/60000)])
+  const filtered = allLogs.filter(l => (!from||l.date>=from) && (!to||l.date<=to));
+  if (!filtered.length) { showToast('出力するデータがありません'); return; }
+  const rows = [['日付','作業者','作業項目','開始時刻','終了時刻','時間(分)']];
+  filtered.sort((a,b) => a.start-b.start).forEach(l =>
+    rows.push([l.date, l.worker, l.taskName, fmtTime(l.start), fmtTime(l.end), Math.round(l.duration/60000)])
   );
-  const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'}));
-  a.download='作業時間記録_'+(from||'all')+'_'+(to||'all')+'.csv';
+  const csv = rows.map(r => r.map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'}));
+  a.download = '作業時間記録_'+(from||'all')+'_'+(to||'all')+'.csv';
   a.click();
   showToast('📥 CSVを出力しました');
 }
@@ -824,9 +927,9 @@ function exportCSV() {
 initWorkers();
 loadLogs();
 
-setTimeout(()=>{
-  if(document.getElementById('loading-overlay').style.display !== 'none') {
-    document.getElementById('loading-overlay').style.display='none';
+setTimeout(() => {
+  if (document.getElementById('loading-overlay').style.display !== 'none') {
+    document.getElementById('loading-overlay').style.display = 'none';
     showToast('⚠ オフラインモードで起動しました');
   }
 }, 5000);
